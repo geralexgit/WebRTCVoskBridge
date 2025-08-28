@@ -53,10 +53,12 @@ class ASRServer:
             return False
 
     async def handler(self, websocket):
-        model = self.get_current_model()
+        # Each connection maintains its own language state
+        connection_language = self.current_language
+        model = self.models[connection_language]
         rec = KaldiRecognizer(model, 16000)
         rec.SetWords(True)
-        print(f"New connection from {websocket.remote_address}")
+        print(f"New connection from {websocket.remote_address} using language: {connection_language}")
 
         try:
             async for msg in websocket:
@@ -83,20 +85,22 @@ class ASRServer:
                             final_result = rec.FinalResult()
                             await websocket.send(final_result)
                             # После финализации можно пересоздать рекогнайзер для нового сегмента
-                            model = self.get_current_model()
+                            model = self.models[connection_language]
                             rec = KaldiRecognizer(model, 16000)
                             rec.SetWords(True)
                         elif data.get("cmd") == "reset":
-                            model = self.get_current_model()
+                            model = self.models[connection_language]
                             rec = KaldiRecognizer(model, 16000)
                             rec.SetWords(True)
                         elif data.get("cmd") == "set_language":
                             language = data.get("language", "en")
-                            if self.set_language(language):
-                                # Recreate recognizer with new language model
-                                model = self.get_current_model()
+                            if language in self.models:
+                                # Update connection language and recreate recognizer
+                                connection_language = language
+                                model = self.models[connection_language]
                                 rec = KaldiRecognizer(model, 16000)
                                 rec.SetWords(True)
+                                print(f"Connection {websocket.remote_address} switched to language: {language}")
                                 await websocket.send(json.dumps({
                                     "status": "language_changed",
                                     "language": language
