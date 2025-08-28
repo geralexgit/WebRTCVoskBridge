@@ -70,7 +70,27 @@ wss.on('connection', (browserWS) => {
   });
   
   browserWS.on('message', (data) => {
-    // Forward audio data to ASR server
+    // Check if it's a text command or binary audio data
+    if (typeof data === 'string' || Buffer.isBuffer(data)) {
+      try {
+        // Try to parse as JSON command
+        const text = typeof data === 'string' ? data : data.toString();
+        const command = JSON.parse(text);
+        
+        if (command.cmd) {
+          console.log('Forwarding command to ASR server:', command);
+          // Forward command to ASR server
+          if (asrWS.readyState === WebSocket.OPEN) {
+            asrWS.send(text);
+          }
+          return;
+        }
+      } catch (e) {
+        // Not JSON, treat as binary audio data
+      }
+    }
+    
+    // Forward binary audio data to ASR server
     if (asrWS.readyState === WebSocket.OPEN) {
       asrWS.send(data);
     }
