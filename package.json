@@ -1,8 +1,12 @@
 {
   "name": "workspace",
   "version": "1.0.0",
-  "main": "audio-processor.js",
+  "type": "module",
+  "main": "dist/audio-processor.js",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/signaling-server.js",
+    "dev": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,5 +19,12 @@
     "express": "^5.1.0",
     "node-fetch": "^3.3.2",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2"
   }
 }
