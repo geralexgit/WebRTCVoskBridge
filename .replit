@@ -17,15 +17,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Simple Web Server"
+args = "Full ASR System"
 
 [[workflows.workflow]]
-name = "Simple Web Server"
+name = "Full ASR System"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node simple-server.js"
+args = "./start-full-system.sh"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
