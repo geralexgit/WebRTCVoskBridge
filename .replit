@@ -17,18 +17,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "ASR System"
+args = "Simple Web Server"
 
 [[workflows.workflow]]
-name = "ASR System"
+name = "Simple Web Server"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = """
-python3 asr_server.py --model vosk-model --host 0.0.0.0 --port 2700 &
-sleep 3
-node signaling-server.js"""
+args = "node simple-server.js"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
