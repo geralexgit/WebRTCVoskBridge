@@ -32,8 +32,13 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 wss.on('connection', (browserWS) => {
   console.log('Browser WebSocket connected');
   
-  // Connect to VOSK ASR server
-  const asrWS = new WebSocket(VOSK_URL);
+  // Connect to VOSK ASR server with proper headers
+  const asrWS = new WebSocket(VOSK_URL, {
+    headers: {
+      'Connection': 'Upgrade',
+      'Upgrade': 'websocket'
+    }
+  });
   
   asrWS.on('open', () => {
     console.log('Connected to VOSK ASR server');
