@@ -59,6 +59,8 @@ class ASRServer:
                         pass
         except websockets.exceptions.ConnectionClosed:
             print(f"Connection closed: {websocket.remote_address}")
+        except websockets.exceptions.InvalidUpgrade as e:
+            print(f"Invalid WebSocket upgrade from {websocket.remote_address}: {e}")
         except Exception as e:
             print(f"Error in handler: {e}")
 

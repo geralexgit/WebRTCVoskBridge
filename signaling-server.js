@@ -13,6 +13,11 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "2mb" }));
 
+// Explicit route for root path
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Раздаём статику фронта
 app.use(express.static(__dirname));
 
