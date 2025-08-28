@@ -31,8 +31,8 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// WebSocket server for direct browser connection
-const wss = new WebSocketServer({ server, path: '/ws' });
+// WebSocket server for direct browser connection  
+const wss = new WebSocketServer({ server, path: '/websocket' });
 
 wss.on('connection', (browserWS) => {
   console.log('Browser WebSocket connected');
