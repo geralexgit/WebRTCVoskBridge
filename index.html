@@ -38,6 +38,35 @@
       justify-content: center;
       margin-bottom: 20px;
       flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .language-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
+    }
+    
+    .language-selector label {
+      font-weight: 500;
+      color: #555;
+      font-size: 14px;
+    }
+    
+    #languageSelect {
+      padding: 8px 12px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      background: white;
+      font-size: 14px;
+      cursor: pointer;
+      min-width: 180px;
+    }
+    
+    #languageSelect:focus {
+      outline: none;
+      border-color: #4CAF50;
     }
     
     button {
