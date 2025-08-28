@@ -67,3 +67,4 @@ pids
 # Temporary files
 tmp/
 temp/
+venv/

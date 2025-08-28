@@ -39,9 +39,50 @@ Currently configured languages:
 - Node.js 16+
 - Modern web browser with microphone access
 
+Если **не установлен пакет `python3.12-venv`**, поэтому `venv` не может создаться. Из-за этого и `source venv/bin/activate` не работает — директории `venv` просто нет.
+
+---
+
+### 🔧 Что нужно сделать:
+
+1. Установи поддержку виртуальных окружений:
+
+```bash
+sudo apt update
+sudo apt install python3.12-venv
+```
+
+2. Теперь пересоздай окружение:
+
+```bash
+python3 -m venv venv
+```
+
+3. Активируй его:
+
+```bash
+source venv/bin/activate
+```
+
+4. Установи нужные пакеты (теперь ошибка PEP 668 пропадёт):
+
+```bash
+pip install --upgrade pip
+pip install vosk websockets numpy
+```
+
+---
+
 ### Python Dependencies
 ```bash
-pip install vosk websockets numpy
+    # создаём папку для окружения
+    python3 -m venv venv
+
+    # активируем окружение
+    source venv/bin/activate
+
+    # теперь можно ставить пакеты
+    pip install vosk websockets numpy
 ```
 
 ### Node.js Dependencies
