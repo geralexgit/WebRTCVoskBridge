@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-time Speech Recognition with Vosk</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    #start {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    #start:hover:not(:disabled) {
+      background: #45a049;
+    }
+    
+    #stop {
+      background: #f44336;
+      color: white;
+    }
+    
+    #stop:hover:not(:disabled) {
+      background: #da190b;
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    #status {
+      text-align: center;
+      padding: 10px;
+      margin: 20px 0;
+      font-weight: 500;
+      border-radius: 5px;
+    }
+    
+    .status-connecting {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-connected {
+      background: #d1edff;
+      color: #0c5460;
+    }
+    
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .status-disconnected {
+      background: #f8f9fa;
+      color: #6c757d;
+    }
+    
+    h3 {
+      color: #555;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+    
+    #log {
+      white-space: pre-wrap;
+      background: #1a1a1a;
+      color: #00ff41;
+      padding: 20px;
+      border-radius: 8px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.4;
+      border: 1px solid #333;
+    }
+    
+    .log-partial {
+      color: #ffaa00;
+    }
+    
+    .log-final {
+      color: #00ff41;
+      font-weight: bold;
+    }
+    
+    .log-error {
+      color: #ff4444;
+    }
+    
+    .log-info {
+      color: #4488ff;
+    }
+    
+    .instructions {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #2196F3;
+    }
+    
+    .instructions h4 {
+      margin-top: 0;
+      color: #1976D2;
+    }
+    
+    .volume-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    .volume-bar {
+      width: 200px;
+      height: 8px;
+      background: #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .volume-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #ff9800, #f44336);
+      width: 0%;
+      transition: width 0.1s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Real-time Speech Recognition with Vosk</h1>
+    
+    <div class="instructions">
+      <h4>Instructions:</h4>
+      <ol>
+        <li>Make sure the Vosk ASR server is running (python asr_server.py)</li>
+        <li>Click "Start" and allow microphone access when prompted</li>
+        <li>Speak clearly into your microphone</li>
+        <li>Watch the real-time transcription appear below</li>
+      </ol>
+    </div>
+    
+    <div class="controls">
+      <button id="start">🎤 Start Recording</button>
+      <button id="stop" disabled>⏹️ Stop Recording</button>
+    </div>
+    
+    <div id="status" class="status-disconnected">Ready to start</div>
+    
+    <div class="volume-indicator">
+      <span>Audio Level:</span>
+      <div class="volume-bar">
+        <div class="volume-fill" id="volumeFill"></div>
+      </div>
+    </div>
+    
+    <h3>📝 Live Transcription</h3>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const volumeFill = document.getElementById('volumeFill');
+
+    let socket, mediaStream, workletNode, audioContext, analyser, volumeDataArray;
+
+    function log(line, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const className = `log-${type}`;
+      logEl.innerHTML += `<span class="${className}">[${timestamp}] ${line}</span>\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(`[${type}] ${line}`);
+    }
+
+    function setStatus(message, className = 'status-disconnected') {
+      statusEl.textContent = message;
+      statusEl.className = className;
+    }
+
+    function updateVolumeIndicator() {
+      if (!analyser || !volumeDataArray) return;
+      
+      analyser.getByteFrequencyData(volumeDataArray);
+      const average = volumeDataArray.reduce((a, b) => a + b) / volumeDataArray.length;
+      const percentage = (average / 255) * 100;
+      volumeFill.style.width = percentage + '%';
+      
+      requestAnimationFrame(updateVolumeIndicator);
+    }
+
+    async function createConnection() {
+      try {
+        setStatus('Connecting to server...', 'status-connecting');
+        
+        // Connect to WebSocket server
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        
+        socket = new WebSocket(wsUrl);
+        socket.binaryType = 'arraybuffer';
+
+        socket.onopen = () => {
+          setStatus('✅ Connected - Ready to transcribe', 'status-connected');
+          log('WebSocket connected - ready for audio', 'info');
+        };
+
+        socket.onclose = () => {
+          setStatus('❌ Disconnected', 'status-disconnected');
+          log('WebSocket connection closed', 'info');
+        };
+
+        socket.onerror = (error) => {
+          setStatus('❌ Connection error', 'status-error');
+          log('WebSocket error: ' + error, 'error');
+        };
+
+        socket.onmessage = (ev) => {
+          try {
+            const data = JSON.parse(ev.data);
+            if (data.partial && data.partial.trim()) {
+              log(`[PARTIAL] ${data.partial}`, 'partial');
+            }
+            if (data.text && data.text.trim()) {
+              log(`[FINAL] ${data.text}`, 'final');
+            }
+          } catch (e) {
+            // возможно пришёл не-JSON
+            log(`[RAW] ${ev.data}`, 'info');
+          }
+        };
+        
+        log('WebSocket connection established', 'info');
+      } catch (error) {
+        setStatus('❌ Connection failed', 'status-error');
+        log('Error creating WebSocket connection: ' + error.message, 'error');
+        throw error;
+      }
+    }
+
+    async function setupAudio() {
+      try {
+        log('Requesting microphone access...', 'info');
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            sampleRate: 48000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }, 
+          video: false 
+        });
+
+        audioContext = new AudioContext({ sampleRate: 48000 });
+        
+        // Дождемся загрузки AudioWorklet
+        await audioContext.audioWorklet.addModule('audio-processor.js');
+        log('Audio worklet loaded', 'info');
+
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        
+        // Анализатор для индикатора уровня
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        volumeDataArray = new Uint8Array(analyser.frequencyBinCount);
+        source.connect(analyser);
+
+        workletNode = new AudioWorkletNode(audioContext, 'pcm16-downsampler', {
+          processorOptions: { targetSampleRate: 16000 }
+        });
+
+        workletNode.port.onmessage = (ev) => {
+          // ev.data — это ArrayBuffer с Int16LE (mono, 16k)
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(ev.data);
+          }
+        };
+
+        source.connect(workletNode);
+        // НЕ подключаем к destination, чтобы не было эхо
+        
+        log('Audio pipeline configured: 48kHz → 16kHz PCM16', 'info');
+        updateVolumeIndicator();
+        
+      } catch (error) {
+        setStatus('❌ Audio setup failed', 'status-error');
+        log('Error setting up audio: ' + error.message, 'error');
+        throw error;
+      }
+    }
+
+    async function start() {
+      try {
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        
+        log('=== Starting speech recognition session ===', 'info');
+        
+        await createConnection();
+        await setupAudio();
+        
+        log('🎤 Recording started - speak now!', 'info');
+        
+      } catch (error) {
+        log('Failed to start: ' + error.message, 'error');
+        stop();
+      }
+    }
+
+    function stop() {
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      
+      log('=== Stopping speech recognition session ===', 'info');
+      
+      // Отправляем команду финализации
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        try {
+          socket.send(JSON.stringify({ cmd: 'finalize' }));
+        } catch (e) {
+          log('Error sending finalize command: ' + e.message, 'error');
+        }
+      }
+      
+      // Закрываем все соединения
+      try {
+        if (workletNode) {
+          workletNode.disconnect();
+          workletNode = null;
+        }
+        if (audioContext) {
+          audioContext.close();
+          audioContext = null;
+        }
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+          mediaStream = null;
+        }
+        if (socket) {
+          socket.close();
+          socket = null;
+        }
+        analyser = null;
+        volumeDataArray = null;
+        volumeFill.style.width = '0%';
+      } catch (error) {
+        log('Error during cleanup: ' + error.message, 'error');
+      }
+      
+      setStatus('Stopped', 'status-disconnected');
+      log('🛑 Session stopped', 'info');
+    }
+
+    // Event listeners
+    startBtn.addEventListener('click', start);
+    stopBtn.addEventListener('click', stop);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (!startBtn.disabled) {
+        stop();
+      }
+    });
+
+    // Initial log message
+    log('Ready to start speech recognition', 'info');
+    log('Make sure the Python ASR server is running on port 2700', 'info');
+  </script>
+</body>
+</html>

@@ -1,2 +1,66 @@
+modules = ["nodejs-20", "python-3.11"]
 [agent]
 expertMode = true
+integrations = ["javascript_websocket==1.0.0"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["wget", "unzip"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "WebRTC-Vosk ASR System"
+
+[[workflows.workflow]]
+name = "WebRTC-Vosk ASR System"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = """
+bash -c \"
+# Install Python dependencies
+pip install vosk websockets numpy
+
+# Install Node.js dependencies
+npm install express ws wrtc cors body-parser node-fetch
+
+# Download Vosk model if not exists
+if [ ! -d 'vosk-model' ] && [ ! -d 'vosk-model-small-en-us-0.15' ]; then
+  echo 'Downloading Vosk model...'
+  wget -q https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+  unzip -q vosk-model-small-en-us-0.15.zip
+  mv vosk-model-small-en-us-0.15 vosk-model
+  rm vosk-model-small-en-us-0.15.zip
+fi
+
+# Start ASR server in background
+python3 asr_server.py --model vosk-model --host 0.0.0.0 --port 2700 &
+ASR_PID=$!
+
+# Wait for ASR server to start
+sleep 3
+
+# Start Node.js signaling server
+node signaling-server.js
+\""""
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 2700
+externalPort = 80
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
