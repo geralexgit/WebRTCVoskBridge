@@ -218,6 +218,17 @@
     </div>
     
     <div class="controls">
+      <div class="language-selector">
+        <label for="languageSelect">Language:</label>
+        <select id="languageSelect">
+          <option value="en">English (US)</option>
+          <option value="ru">Русский (Russian)</option>
+          <option value="de">Deutsch (German)</option>
+          <option value="fr">Français (French)</option>
+          <option value="es">Español (Spanish)</option>
+          <option value="zh">中文 (Chinese)</option>
+        </select>
+      </div>
       <button id="start">🎤 Start Recording</button>
       <button id="stop" disabled>⏹️ Stop Recording</button>
     </div>
@@ -243,6 +254,7 @@
     const volumeFill = document.getElementById('volumeFill');
 
     let socket, mediaStream, workletNode, audioContext, analyser, volumeDataArray;
+    let currentLanguage = 'en';
 
     function log(line, type = 'info') {
       const timestamp = new Date().toLocaleTimeString();
@@ -283,6 +295,11 @@
         socket.onopen = () => {
           setStatus('✅ Connected - Ready to transcribe', 'status-connected');
           log('WebSocket connected - ready for audio', 'info');
+          
+          // Send language selection to server
+          const languageMessage = JSON.stringify({ cmd: 'set_language', language: currentLanguage });
+          socket.send(languageMessage);
+          log(`Language set to: ${currentLanguage}`, 'info');
         };
 
         socket.onclose = () => {
@@ -445,6 +462,19 @@
     // Event listeners
     startBtn.addEventListener('click', start);
     stopBtn.addEventListener('click', stop);
+    
+    // Language selection handler
+    document.getElementById('languageSelect').addEventListener('change', function(e) {
+      currentLanguage = e.target.value;
+      log(`Language changed to: ${currentLanguage}`, 'info');
+      
+      // If we have an active connection, send the language change
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        const languageMessage = JSON.stringify({ cmd: 'set_language', language: currentLanguage });
+        socket.send(languageMessage);
+        log(`Language updated on server: ${currentLanguage}`, 'info');
+      }
+    });
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
