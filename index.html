@@ -247,6 +247,7 @@
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const wsUrl = `${protocol}//${window.location.host}/ws`;
         
+        log(`Connecting to WebSocket: ${wsUrl}`, 'info');
         socket = new WebSocket(wsUrl);
         socket.binaryType = 'arraybuffer';
 
@@ -262,7 +263,8 @@
 
         socket.onerror = (error) => {
           setStatus('❌ Connection error', 'status-error');
-          log('WebSocket error: ' + error, 'error');
+          log('WebSocket error: ' + JSON.stringify(error), 'error');
+          console.error('WebSocket error details:', error);
         };
 
         socket.onmessage = (ev) => {
@@ -279,6 +281,15 @@
             log(`[RAW] ${ev.data}`, 'info');
           }
         };
+        
+        // Wait for connection to open
+        await new Promise((resolve, reject) => {
+          socket.addEventListener('open', resolve, { once: true });
+          socket.addEventListener('error', reject, { once: true });
+          
+          // Timeout after 10 seconds
+          setTimeout(() => reject(new Error('Connection timeout')), 10000);
+        });
         
         log('WebSocket connection established', 'info');
       } catch (error) {
