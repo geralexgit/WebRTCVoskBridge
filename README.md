@@ -1,4 +1,3 @@
----
 
 # AI HR Bot - Real-time Speech Recognition & Interview System
 
