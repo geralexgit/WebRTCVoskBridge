@@ -4,16 +4,19 @@
   "type": "module",
   "main": "dist/audio-processor.js",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
+    "build": "tsc && cd ui && npx vite build",
+    "build:server": "tsc",
+    "build:ui": "cd ui && npx vite build",
     "start": "node dist/signaling-server.js",
     "start:hr": "node dist/hr-ai-service.js",
-    "dev": "npm run build && npm run watch:services",
-    "watch:signaling": "nodemon --watch dist --delay 2s --exec \"node dist/signaling-server.js\"",
-    "watch:hr": "nodemon --watch dist --delay 2s --exec \"node dist/hr-ai-service.js\"",
-    "watch:services": "concurrently --names \"TS,SIGNAL,HR\" --prefix-colors \"blue,yellow,magenta\" --kill-others \"npm run build:watch\" \"npm run watch:signaling\" \"npm run watch:hr\"",
-    "watch:all": "./start-watch-all.sh",
-    "clean": "rm -rf dist",
+    "start:ui": "cd ui && npx vite",
+    "dev": "npm run build:server && npm run watch",
+    "dev:ui": "cd ui && npx vite",
+    "dev:full": "npm run build:server && npm run watch:ui",
+    "watch": "concurrently --names \"TS,SIGNAL,HR\" --prefix-colors \"blue,yellow,magenta\" --kill-others \"tsc --watch\" \"nodemon --watch dist --delay 2s --exec 'node dist/signaling-server.js'\" \"nodemon --watch dist --delay 2s --exec 'node dist/hr-ai-service.js'\"",
+    "watch:ui": "concurrently --names \"TS,UI,SIGNAL,HR\" --prefix-colors \"blue,cyan,yellow,magenta\" --kill-others \"tsc --watch\" \"cd ui && npx vite\" \"nodemon --watch dist --delay 2s --exec 'node dist/signaling-server.js'\" \"nodemon --watch dist --delay 2s --exec 'node dist/hr-ai-service.js'\"",
+    "watch:full": "concurrently --names \"TS,UI,ASR,SIGNAL,HR\" --prefix-colors \"blue,cyan,green,yellow,magenta\" --kill-others \"tsc --watch\" \"cd ui && npx vite\" \"python3 asr_server.py\" \"nodemon --watch dist --delay 2s --exec 'node dist/signaling-server.js'\" \"nodemon --watch dist --delay 2s --exec 'node dist/hr-ai-service.js'\"",
+    "clean": "rm -rf dist dist-ui",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:hr": "node test-hr-service.js",
     "test:logs": "node test-hr-logs.js"
@@ -27,15 +30,18 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "node-fetch": "^3.3.2",
+    "preact": "^10.24.3",
     "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@preact/preset-vite": "^2.9.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.5.13",
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
   }
 }
