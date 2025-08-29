@@ -1,5 +1,3 @@
-I’ve gone through your file and translated all the Russian text into English. Here’s the fully translated version of your **README.md**:
-
 ---
 
 # AI HR Bot - Real-time Speech Recognition & Interview System
