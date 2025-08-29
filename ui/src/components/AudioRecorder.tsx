@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 interface AudioRecorderProps {
   isRecording: boolean
   onRecordingChange: (recording: boolean) => void
-  onTranscription: (text: string, isFinal: boolean) => void
+  onTranscription: (text: string, isFinal: boolean | 'full') => void
   language: string
 }
 
@@ -14,6 +14,8 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
   const workletNodeRef = useRef<AudioWorkletNode | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const volumeDataRef = useRef<Uint8Array | null>(null)
+  const finalizePendingRef = useRef(false)
+  const finalizeTimeoutRef = useRef<number | null>(null)
   
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
   const [volumeLevel, setVolumeLevel] = useState(0)
@@ -67,6 +69,18 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
             onTranscription(data.partial, false)
           } else if (data.text && data.text.trim()) {
             onTranscription(data.text, true)
+          } else if (data.full_result && data.full_result.trim()) {
+            // Forward full session result with a special flag
+            onTranscription(data.full_result, 'full')
+            // If finalize was pending, cleanup now
+            if (finalizePendingRef.current) {
+              finalizePendingRef.current = false
+              if (finalizeTimeoutRef.current) {
+                clearTimeout(finalizeTimeoutRef.current)
+                finalizeTimeoutRef.current = null
+              }
+              cleanup()
+            }
           }
         } catch (e) {
           // Raw message
@@ -147,12 +161,29 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       try {
         wsRef.current.send(JSON.stringify({ cmd: 'finalize' }))
+        finalizePendingRef.current = true
+        // Set a timeout to force cleanup if full_result is not received
+        finalizeTimeoutRef.current = window.setTimeout(() => {
+          if (finalizePendingRef.current) {
+            finalizePendingRef.current = false
+            cleanup()
+          }
+        }, 2000)
+        return // Defer cleanup until full_result is received or timeout
       } catch (e) {
         console.error('Error sending finalize command:', e)
       }
     }
+    // If not connected, cleanup immediately
+    cleanup()
+  }
 
-    // Cleanup
+  // Extracted cleanup logic
+  const cleanup = () => {
+    if (finalizeTimeoutRef.current) {
+      clearTimeout(finalizeTimeoutRef.current)
+      finalizeTimeoutRef.current = null
+    }
     try {
       if (workletNodeRef.current) {
         workletNodeRef.current.disconnect()
@@ -176,7 +207,6 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
     } catch (error) {
       console.error('Error during cleanup:', error)
     }
-
     setStatus('disconnected')
   }
 
@@ -193,6 +223,8 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
     return () => {
       if (isRecording) {
         stopRecording()
+      } else {
+        cleanup()
       }
     }
   }, [])

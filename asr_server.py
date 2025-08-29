@@ -60,6 +60,8 @@ class ASRServer:
         rec.SetWords(True)
         print(f"New connection from {websocket.remote_address} using language: {connection_language}")
 
+        final_results = []  # Store all final results for this connection
+
         try:
             async for msg in websocket:
                 if isinstance(msg, (bytes, bytearray)):
@@ -72,6 +74,7 @@ class ASRServer:
                     if rec.AcceptWaveform(msg):
                         result = rec.Result()  # финальный кусок
                         print(f"Final result: {result}")
+                        final_results.append(json.loads(result).get("text", ""))
                         await websocket.send(result)
                     else:
                         partial = rec.PartialResult()
@@ -84,14 +87,21 @@ class ASRServer:
                         if data.get("cmd") == "finalize":
                             final_result = rec.FinalResult()
                             await websocket.send(final_result)
-                            # После финализации можно пересоздать рекогнайзер для нового сегмента
+                            # Store the last segment
+                            final_results.append(json.loads(final_result).get("text", ""))
+                            # After finalization, you can recreate recognizer for new segment
                             model = self.models[connection_language]
                             rec = KaldiRecognizer(model, 16000)
                             rec.SetWords(True)
+                            # Concatenate all results and send as one string
+                            full_text = " ".join([r for r in final_results if r]).strip()
+                            print(f"Full session result: {full_text}")
+                            await websocket.send(json.dumps({"full_result": full_text}))
                         elif data.get("cmd") == "reset":
                             model = self.models[connection_language]
                             rec = KaldiRecognizer(model, 16000)
                             rec.SetWords(True)
+                            final_results.clear()
                         elif data.get("cmd") == "set_language":
                             language = data.get("language", "en")
                             if language in self.models:
@@ -116,7 +126,10 @@ class ASRServer:
                         print(f"Error parsing command: {e}")
                         pass
         except websockets.exceptions.ConnectionClosed:
+            # On connection close, print the full result
+            full_text = " ".join([r for r in final_results if r]).strip()
             print(f"Connection closed: {websocket.remote_address}")
+            print(f"Full session result: {full_text}")
         except websockets.exceptions.InvalidUpgrade as e:
             print(f"Invalid WebSocket upgrade from {websocket.remote_address}: {e}")
         except Exception as e:

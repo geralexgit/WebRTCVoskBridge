@@ -4,7 +4,7 @@ import { AudioRecorder } from './AudioRecorder'
 interface TranscriptionEntry {
   text: string
   timestamp: Date
-  type: 'partial' | 'final' | 'info' | 'error'
+  type: 'partial' | 'final' | 'info' | 'error' | 'full'
 }
 
 export function SpeechRecognition() {
@@ -12,16 +12,20 @@ export function SpeechRecognition() {
   const [language, setLanguage] = useState('en')
   const [transcriptions, setTranscriptions] = useState<TranscriptionEntry[]>([])
 
-  const handleTranscription = (text: string, isFinal: boolean) => {
+  const handleTranscription = (text: string, isFinal: boolean | 'full') => {
     const entry: TranscriptionEntry = {
       text,
       timestamp: new Date(),
-      type: isFinal ? 'final' : 'partial'
+      type: isFinal === 'full' ? 'full' : isFinal ? 'final' : 'partial'
     }
 
     setTranscriptions(prev => {
+      // If it's a full session result, add as a distinct entry
+      if (entry.type === 'full') {
+        return [...prev, entry]
+      }
       // If it's a partial transcription, replace the last partial entry
-      if (!isFinal && prev.length > 0 && prev[prev.length - 1].type === 'partial') {
+      if (entry.type === 'partial' && prev.length > 0 && prev[prev.length - 1].type === 'partial') {
         return [...prev.slice(0, -1), entry]
       }
       // Otherwise, add the new entry
@@ -96,6 +100,7 @@ export function SpeechRecognition() {
                 <span class="text">
                   {entry.type === 'partial' && '[PARTIAL] '}
                   {entry.type === 'final' && '[FINAL] '}
+                  {entry.type === 'full' && '[SESSION RESULT] '}
                   {entry.text}
                 </span>
               </div>
