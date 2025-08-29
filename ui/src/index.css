@@ -12,9 +12,11 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
@@ -68,6 +70,8 @@ body {
   margin: 0 auto;
   width: 100%;
   padding: 2rem;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* New app layout styles */
@@ -75,13 +79,19 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
-  height: calc(100vh - 200px);
-  min-height: 600px;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Allow grid children to shrink so inner logs can scroll */
+.app-layout > * {
+  min-height: 0;
 }
 
 .speech-section {
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .chat-section {
@@ -90,7 +100,7 @@ body {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .chat-header {
@@ -100,6 +110,9 @@ body {
   padding: 1rem 1.5rem;
   background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .chat-header h3 {
@@ -177,7 +190,7 @@ body {
 .messages {
   flex: 1;
   padding: 1rem;
-  overflow-y: auto;
+  overflow-y: visible;
   background: #fafafa;
 }
 
@@ -324,7 +337,7 @@ body {
 
 .language-selector {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.5rem;
   align-items: center;
 }
@@ -467,6 +480,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .transcription-section h3 {
@@ -484,6 +498,7 @@ body {
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
   line-height: 1.4;
+  overscroll-behavior: contain;
 }
 
 .empty-log {

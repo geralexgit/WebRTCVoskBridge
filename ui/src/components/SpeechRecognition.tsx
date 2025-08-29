@@ -49,17 +49,8 @@ export function SpeechRecognition({ onSessionResult }: SpeechRecognitionProps = 
   return (
     <div class="speech-recognition">
       <div class="speech-header">
-        <h1>🎤 Real-time Speech Recognition with Vosk</h1>
-        
-        <div class="instructions">
-          <h4>Instructions:</h4>
-          <ol>
-            <li>Make sure the Vosk ASR server is running (python asr_server.py)</li>
-            <li>Click "Start" and allow microphone access when prompted</li>
-            <li>Speak clearly into your microphone</li>
-            <li>Watch the real-time transcription appear below</li>
-          </ol>
-        </div>
+        <h1>🎤 Real-time Speech Recognition</h1>
+      
       </div>
 
       <div class="controls">

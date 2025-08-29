@@ -86,7 +86,7 @@ export function App() {
 
   return (
     <div class="app">
-      <header class="app-header">
+      {/* <header class="app-header">
         <div class="header-content">
           <h1>🤖 AI HR Assistant</h1>
           <nav class="mode-selector">
@@ -104,7 +104,7 @@ export function App() {
             </button>
           </nav>
         </div>
-      </header>
+      </header> */}
       
       <main class="app-main">
         <div class="app-layout">
