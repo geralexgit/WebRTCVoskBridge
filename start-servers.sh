@@ -16,6 +16,21 @@ if ! command -v node &> /dev/null; then
     echo "❌ Node.js is not installed or not in PATH"
     exit 1
 fi
+# Ensure venv is present and activated
+if [ -d "venv" ]; then
+    # If not already activated, activate it
+    if [ -z "$VIRTUAL_ENV" ]; then
+        echo "🔄 Activating virtual environment..."
+        source venv/bin/activate
+        echo "✅ Virtual environment activated"
+    fi
+    PYTHON_CMD="venv/bin/python"
+    PIP_CMD="venv/bin/pip"
+else
+    echo "❌ Python virtual environment (venv) not found!"
+    echo "   Please create one with: python3 -m venv venv && source venv/bin/activate && pip install vosk websockets numpy"
+    exit 1
+fi
 
 # Function to cleanup background processes
 cleanup() {
@@ -67,12 +82,16 @@ fi
 
 echo "✅ Found Vosk model: $MODEL_DIR"
 
-# Check Python packages
+# Check Python packages using venv's python
 echo "🐍 Checking Python dependencies..."
-if ! python3 -c "import vosk, websockets, numpy" 2>/dev/null; then
+if ! $PYTHON_CMD -c "import vosk, websockets, numpy" 2>/dev/null; then
     echo "⚠️  Missing Python packages!"
-    echo "   Please install: pip install vosk websockets numpy"
-    exit 1
+    echo "   Installing: $PIP_CMD install vosk websockets numpy"
+    $PIP_CMD install vosk websockets numpy
+    if ! $PYTHON_CMD -c "import vosk, websockets, numpy" 2>/dev/null; then
+        echo "❌ Failed to install Python packages in venv. Please install them manually."
+        exit 1
+    fi
 fi
 echo "✅ Python dependencies OK"
 
@@ -97,7 +116,7 @@ echo "-------------------"
 
 # Start ASR server in background
 echo "🐍 Starting Python ASR server..."
-python3 asr_server.py --model "$MODEL_DIR" --host 0.0.0.0 --port 2700 &
+$PYTHON_CMD asr_server.py --model "$MODEL_DIR" --host 0.0.0.0 --port 2700 &
 ASR_PID=$!
 echo "   ASR server started (PID: $ASR_PID) on ws://0.0.0.0:2700"
 
