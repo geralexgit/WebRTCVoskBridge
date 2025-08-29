@@ -68,3 +68,8 @@ pids
 tmp/
 temp/
 venv/
+
+vosk-model/
+vosk-model-ru/
+vosk-model/*
+vosk-model-ru/*
