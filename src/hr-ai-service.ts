@@ -88,6 +88,7 @@ app.post("/process-resume", async (req, res) => {
 2. Извлеки ключевые навыки из резюме. 
 3. Определи совпадения и пробелы. 
 4. Сгенерируй 5 вопросов для интервью (technical, case study, soft skills).
+5. Ответ кандидата приходит из системы распознавания речи, вероятно, содержит ошибки учитывай это при анализе
 Верни ответ в JSON с ключами: job_requirements, candidate_skills, matches, gaps, questions.
 ---
 Вакансия:

@@ -601,3 +601,98 @@ body {
     justify-content: space-between;
   }
 }
+
+/* Job Description Uploader */
+.job-description-uploader {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  flex: 1;
+}
+
+.jdu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jdu-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.jdu-meta {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.jdu-counter {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.jdu-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 160px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 0.875rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #111827;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  flex: 1;
+  min-height: 0;
+}
+
+.jdu-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.jdu-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.jdu-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jdu-submit {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.05s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.jdu-submit:hover:not(.disabled):not(:disabled) {
+  background: #1d4ed8;
+}
+
+.jdu-submit:active:not(.disabled):not(:disabled) {
+  transform: translateY(1px);
+}
+
+.jdu-submit.disabled,
+.jdu-submit:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+  box-shadow: none;
+}

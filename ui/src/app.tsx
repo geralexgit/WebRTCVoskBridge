@@ -1,17 +1,19 @@
 import { useState } from 'preact/hooks'
 import { SpeechRecognition } from './components/SpeechRecognition'
 import { ChatInterface } from './components/ChatInterface'
+import { JobDescriptionUploader } from './components/JobDescriptionUploader'
 
-type AppMode = 'speech' | 'chat'
+type AppMode = 'speech' | 'chat' | 'job'
 
 export function App() {
   const [mode, setMode] = useState<AppMode>('speech')
   const [messages, setMessages] = useState<Array<{ text: string; sender: 'user' | 'ai' }>>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+    // Static job description for demo
+  const [jobDescription, setJobDescription] = useState('Python developer with SQL and data analytics experience')
 
-  // Static job description for demo
-  const jobDescription = 'Python developer with SQL and data analytics experience';
+
 
   // Called when a session result is available
   const handleSessionResult = async (resumeText: string) => {
@@ -86,7 +88,7 @@ export function App() {
 
   return (
     <div class="app">
-      {/* <header class="app-header">
+      <header class="app-header">
         <div class="header-content">
           <h1>🤖 AI HR Assistant</h1>
           <nav class="mode-selector">
@@ -96,47 +98,68 @@ export function App() {
             >
               🎤 Speech Recognition
             </button>
-            <button 
+            {/* <button 
               class={mode === 'chat' ? 'active' : ''}
               onClick={() => setMode('chat')}
             >
               💬 HR Chat
+            </button> */}
+            <button 
+              class={mode === 'job' ? 'active' : ''}
+              onClick={() => setMode('job')}
+            >
+              📝 Job Description
             </button>
           </nav>
         </div>
-      </header> */}
+      </header>
       
       <main class="app-main">
-        <div class="app-layout">
-          <div class="speech-section">
-            <SpeechRecognition onSessionResult={handleSessionResult} />
-          </div>
-          
-          <div class="chat-section">
-            <div class="chat-header">
-              <h3>💬 HR Assistant Chat</h3>
-              <div class="chat-controls">
-                <span class="session-id">Session: {sessionId.slice(-8)}</span>
-                <button 
-                  class="clear-chat-button"
-                  onClick={clearMessages}
-                  disabled={messages.length === 0}
-                >
-                  🗑️ Clear Chat
-                </button>
+        {mode === 'job' ? (
+          <div class="app-layout">
+            <div class="chat-section" style="width: 100%">
+              <div class="chat-header">
+                <h3>📝 Job Description</h3>
               </div>
+              <JobDescriptionUploader 
+                value={jobDescription}
+                onChange={setJobDescription}
+                onSubmit={() => setJobDescription(jobDescription)}
+              />
+            </div>
+          </div>
+        ) : (
+          <div class="app-layout">
+            <div class="speech-section">
+              <SpeechRecognition onSessionResult={handleSessionResult} />
             </div>
             
-            {isProcessing && (
-              <div class="processing-indicator">
-                <div class="spinner"></div>
-                <span>AI is analyzing your response...</span>
+            <div class="chat-section">
+              <div class="chat-header">
+                <h3>💬 HR Assistant Chat</h3>
+                <div class="chat-controls">
+                  <span class="session-id">Session: {sessionId.slice(-8)}</span>
+                  <button 
+                    class="clear-chat-button"
+                    onClick={clearMessages}
+                    disabled={messages.length === 0}
+                  >
+                    🗑️ Clear Chat
+                  </button>
+                </div>
               </div>
-            )}
-            
-            <ChatInterface messages={messages} />
+              
+              {isProcessing && (
+                <div class="processing-indicator">
+                  <div class="spinner"></div>
+                  <span>AI is analyzing your response...</span>
+                </div>
+              )}
+              
+              <ChatInterface messages={messages} />
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   )
