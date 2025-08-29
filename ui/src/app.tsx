@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks'
 import { SpeechRecognition } from './components/SpeechRecognition'
 import { ChatInterface } from './components/ChatInterface'
 import { JobDescriptionUploader } from './components/JobDescriptionUploader'
+import { ResumeUploader } from './components/ResumeUploader'
 
 type AppMode = 'speech' | 'chat' | 'job'
 
@@ -12,8 +13,7 @@ export function App() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
     // Static job description for demo
   const [jobDescription, setJobDescription] = useState('Python developer with SQL and data analytics experience')
-
-
+  const [resume, setResume] = useState('Python developer with SQL and data analytics experience')
 
   // Called when a session result is available
   const handleSessionResult = async (resumeText: string) => {
@@ -117,7 +117,7 @@ export function App() {
       <main class="app-main">
         {mode === 'job' ? (
           <div class="app-layout">
-            <div class="chat-section" style="width: 100%">
+            <div class="chat-section">
               <div class="chat-header">
                 <h3>📝 Job Description</h3>
               </div>
@@ -125,6 +125,16 @@ export function App() {
                 value={jobDescription}
                 onChange={setJobDescription}
                 onSubmit={() => setJobDescription(jobDescription)}
+              />
+            </div>
+            <div class="chat-section">
+              <div class="chat-header">
+                <h3>📄 Resume</h3>
+              </div>
+              <ResumeUploader 
+                value={resume}
+                onChange={setResume}
+                onSubmit={() => setResume(resume)}
               />
             </div>
           </div>
