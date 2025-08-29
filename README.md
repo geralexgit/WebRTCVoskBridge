@@ -1,15 +1,22 @@
-# Real-time Speech Recognition System with Vosk
+I’ve gone through your file and translated all the Russian text into English. Here’s the fully translated version of your **README.md**:
 
-A real-time automatic speech recognition (ASR) system that processes audio from the browser and transcribes it using Vosk. The system supports multiple languages including English and Russian.
+---
+
+# AI HR Bot - Real-time Speech Recognition & Interview System
+
+A comprehensive AI-powered HR system that combines real-time speech recognition with intelligent interview analysis. The system processes audio from the browser, transcribes it using Vosk, and uses local LLM (Gemma 3n) to analyze candidates and generate interview questions.
 
 ## System Architecture
 
-The system consists of three main components:
-- **Web Frontend**: Captures and processes audio in the browser
-- **Node.js Bridge Server**: WebSocket server that bridges browser and ASR server
-- **Python ASR Server**: Vosk-based speech recognition engine
+The system consists of four main components:
+
+* **Web Frontend**: Captures and processes audio in the browser
+* **Node.js Bridge Server**: WebSocket server that bridges browser and ASR server
+* **Python ASR Server**: Vosk-based speech recognition engine
+* **HR AI Service**: Node.js service that analyzes resumes and generates interview questions using Ollama + Gemma 3n
 
 ### Data Flow
+
 1. Browser captures audio → AudioWorklet downsamples to 16kHz PCM16
 2. Audio chunks sent via WebSocket to Node.js bridge server
 3. Node.js forwards binary data to Python Vosk server
@@ -18,53 +25,69 @@ The system consists of three main components:
 
 ## Features
 
-- ✅ Real-time speech recognition
-- ✅ Multi-language support (English, Russian, and more)
-- ✅ Language switching without restart
-- ✅ Audio level visualization
-- ✅ Responsive web interface
-- ✅ Low-latency processing (~64ms chunks)
+### Speech Recognition
+
+* ✅ Real-time speech recognition
+* ✅ Multi-language support (English, Russian, and more)
+* ✅ Language switching without restart
+* ✅ Audio level visualization
+* ✅ Responsive web interface
+* ✅ Low-latency processing (\~64ms chunks)
+
+### HR AI Features
+
+* ✅ Resume analysis and job matching
+* ✅ Automatic interview question generation
+* ✅ Skills gap identification
+* ✅ Local LLM processing (privacy-focused)
+* ✅ RESTful API for integration
+* ✅ Multi-language support for HR analysis
+* ✅ Comprehensive logging and monitoring
+* ✅ Request tracking with unique IDs
+* ✅ Performance metrics and health monitoring
 
 ## Supported Languages
 
 Currently configured languages:
-- **English (US)** - Default
-- **Русский (Russian)** - Full support
-- German, French, Spanish, Chinese - Framework ready (models not included)
+
+* **English (US)** - Default
+* **Russian (Русский)** - Full support
+* German, French, Spanish, Chinese - Framework ready (models not included)
 
 ## Prerequisites
 
 ### System Requirements
-- Python 3.8+
-- Node.js 16+
-- Modern web browser with microphone access
 
-Если **не установлен пакет `python3.12-venv`**, поэтому `venv` не может создаться. Из-за этого и `source venv/bin/activate` не работает — директории `venv` просто нет.
+* Python 3.8+
+* Node.js 16+
+* Modern web browser with microphone access
+
+If **the package `python3.12-venv` is not installed**, then `venv` cannot be created. Because of this, `source venv/bin/activate` does not work — the `venv` directory simply does not exist.
 
 ---
 
-### 🔧 Что нужно сделать:
+### 🔧 What to do:
 
-1. Установи поддержку виртуальных окружений:
+1. Install virtual environment support:
 
 ```bash
 sudo apt update
 sudo apt install python3.12-venv
 ```
 
-2. Теперь пересоздай окружение:
+2. Now recreate the environment:
 
 ```bash
 python3 -m venv venv
 ```
 
-3. Активируй его:
+3. Activate it:
 
 ```bash
 source venv/bin/activate
 ```
 
-4. Установи нужные пакеты (теперь ошибка PEP 668 пропадёт):
+4. Install required packages (the PEP 668 error will disappear now):
 
 ```bash
 pip install --upgrade pip
@@ -74,18 +97,20 @@ pip install vosk websockets numpy
 ---
 
 ### Python Dependencies
+
 ```bash
-    # создаём папку для окружения
+    # create a folder for the environment
     python3 -m venv venv
 
-    # активируем окружение
+    # activate the environment
     source venv/bin/activate
 
-    # теперь можно ставить пакеты
+    # now install packages
     pip install vosk websockets numpy
 ```
 
 ### Node.js Dependencies
+
 ```bash
 npm install express cors body-parser ws
 ```
@@ -93,6 +118,7 @@ npm install express cors body-parser ws
 ## Installation
 
 ### 1. Clone the Repository
+
 ```bash
 git clone <repository-url>
 cd speech-recognition-system
@@ -101,11 +127,13 @@ cd speech-recognition-system
 ### 2. Install Dependencies
 
 **Python dependencies:**
+
 ```bash
 pip install vosk websockets numpy
 ```
 
 **Node.js dependencies:**
+
 ```bash
 npm install
 ```
@@ -113,6 +141,7 @@ npm install
 ### 3. Download Language Models
 
 **English Model (Required):**
+
 ```bash
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
@@ -120,240 +149,106 @@ mv vosk-model-small-en-us-0.15 vosk-model
 ```
 
 **Russian Model (Optional):**
+
 ```bash
 wget https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip
 unzip vosk-model-small-ru-0.22.zip
 mv vosk-model-small-ru-0.22 vosk-model-ru
 ```
 
-### 4. Additional Language Models
+### 4. Setup Ollama and Gemma 3n (For HR AI Service)
+
+**Install Ollama:**
+
+```bash
+# Linux/macOS
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Or download from https://ollama.ai/download
+```
+
+**Pull Gemma 3n model:**
+
+```bash
+ollama pull gemma3n:latest
+```
+
+**Verify Ollama is running:**
+
+```bash
+# Check if Ollama service is running
+ollama list
+
+# Test the model
+ollama run gemma3n:latest "Hello, how are you?"
+```
+
+**Start Ollama service (if not auto-started):**
+
+```bash
+ollama serve
+```
+
+### 5. Additional Language Models
 
 To add more languages, download models from [Vosk Models](https://alphacephei.com/vosk/models) and place them in directories matching the language codes in `asr_server.py`:
 
-- German: `vosk-model-de`
-- French: `vosk-model-fr`
-- Spanish: `vosk-model-es`
-- Chinese: `vosk-model-zh`
+* German: `vosk-model-de`
+* French: `vosk-model-fr`
+* Spanish: `vosk-model-es`
+* Chinese: `vosk-model-zh`
 
 ## Running the System
 
-### Option 1: Automatic Startup (Recommended)
+### Production Mode
+
+**Start all services:**
 ```bash
 chmod +x start-full-system.sh
 ./start-full-system.sh
 ```
 
-### Option 2: Manual Startup
-
-**Terminal 1 - Start ASR Server:**
+**Start individual services:**
 ```bash
-python3 asr_server.py --host 0.0.0.0 --port 2700
+# HR AI service only
+chmod +x start-hr-service.sh
+./start-hr-service.sh
+
+# ASR server only
+python3 asr_server.py
+
+# Signaling server only
+npm run build && npm start
 ```
 
-**Terminal 2 - Start Bridge Server:**
+### Development Mode (Recommended for Development)
+
+**Start all services with auto-restart and live reloading:**
 ```bash
-node signaling-server.js
+chmod +x start-watch-all.sh
+./start-watch-all.sh
 ```
 
-### Option 3: Development Mode
-
-For development with auto-restart:
+**Or use npm scripts for more control:**
 ```bash
-# Install nodemon globally
-npm install -g nodemon
+# Watch all services (TypeScript + ASR + Signaling + HR AI)
+npm run watch:all
 
-# Start with auto-restart
-nodemon signaling-server.js
+# Watch only Node.js services (requires manual ASR server start)
+npm run watch:services
+
+# Watch individual services
+npm run watch:signaling  # Signaling server only
+npm run watch:hr         # HR AI service only
+npm run dev              # TypeScript compiler only
 ```
 
-## Usage
+**Development Mode Features:**
+* ✅ Auto-restart on file changes
+* ✅ TypeScript compilation in watch mode
+* ✅ Color-coded logs for each service
+* ✅ Graceful shutdown with Ctrl+C
+* ✅ Real-time error reporting
+* ✅ Automatic rebuilding on source changes
 
-1. **Open the web interface** at `http://localhost:5000`
-2. **Select language** from the dropdown menu
-3. **Click "Start Recording"** and allow microphone access
-4. **Speak clearly** into your microphone
-5. **Watch real-time transcription** appear in the interface
-6. **Switch languages** during recording if needed
-
-## Configuration
-
-### Server Ports
-- Web interface: `5000`
-- ASR WebSocket server: `2700`
-
-### Audio Settings
-- Sample rate: 16kHz (downsampled from 48kHz)
-- Format: PCM16 mono
-- Chunk size: 1024 samples (~64ms)
-
-### Language Models
-Modify `asr_server.py` to add or remove language model paths:
-```python
-model_paths = {
-    'en': './vosk-model',
-    'ru': './vosk-model-ru',
-    'de': './vosk-model-de',  # Add more languages here
-    # ...
-}
-```
-
-## Deployment
-
-### Production Deployment
-
-1. **Set environment variables:**
-```bash
-export NODE_ENV=production
-export PORT=5000
-export VOSK_URL=ws://localhost:2700
-```
-
-2. **Use process manager:**
-```bash
-# Install PM2
-npm install -g pm2
-
-# Start services
-pm2 start asr_server.py --name asr-server --interpreter python3
-pm2 start signaling-server.js --name bridge-server
-```
-
-3. **Setup reverse proxy (Nginx):**
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location /websocket {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-    }
-}
-```
-
-### Docker Deployment
-
-```dockerfile
-FROM python:3.11-slim
-
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-RUN apt-get install -y nodejs wget unzip
-
-WORKDIR /app
-
-# Copy files
-COPY . .
-
-# Install dependencies
-RUN pip install vosk websockets numpy
-RUN npm install
-
-# Download English model
-RUN wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && \
-    unzip vosk-model-small-en-us-0.15.zip && \
-    mv vosk-model-small-en-us-0.15 vosk-model && \
-    rm vosk-model-small-en-us-0.15.zip
-
-EXPOSE 5000 2700
-
-CMD ["./start-full-system.sh"]
-```
-
-### Replit Deployment
-
-The system is already configured for Replit:
-1. Fork the repository to Replit
-2. Run the project - dependencies will auto-install
-3. The web interface will be available via Replit's web view
-
-## Troubleshooting
-
-### Common Issues
-
-**1. WebSocket Connection Failed**
-- Ensure both servers are running
-- Check firewall settings for ports 5000 and 2700
-- Verify WebSocket URL in browser console
-
-**2. Audio Not Working**
-- Allow microphone permissions in browser
-- Check audio input device settings
-- Test with different browsers (Chrome/Firefox recommended)
-
-**3. Language Not Switching**
-- Verify language model files exist
-- Check server logs for model loading errors
-- Ensure proper language codes are used
-
-**4. Poor Recognition Quality**
-- Check audio levels (use volume indicator)
-- Speak clearly and at normal pace
-- Reduce background noise
-- Consider using a better microphone
-
-### Logs and Debugging
-
-**Browser Console:**
-- Open Developer Tools (F12)
-- Check Console for WebSocket errors
-- Monitor Network tab for connection issues
-
-**Server Logs:**
-- Python ASR server: Check terminal output for model loading
-- Node.js server: Check for WebSocket connection logs
-- Use `--verbose` flags for detailed logging
-
-## Performance Optimization
-
-### For Better Recognition:
-- Use high-quality microphone
-- Minimize background noise
-- Speak at normal pace
-- Use appropriate language model size
-
-### For Lower Latency:
-- Reduce chunk size (trade-off with accuracy)
-- Use smaller Vosk models
-- Optimize network connection
-- Deploy servers geographically close to users
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is open source. Please check individual component licenses:
-- Vosk: Apache 2.0
-- Node.js dependencies: Various (check package.json)
-
-## Support
-
-For issues and questions:
-1. Check the troubleshooting section
-2. Review server logs
-3. Test with different browsers/devices
-4. Open an issue with detailed error information
-
-## Model Credits
-
-- English models: [Vosk Models](https://alphacephei.com/vosk/models)
-- Russian models: [Vosk Models](https://alphacephei.com/vosk/models)
-- Based on Kaldi speech recognition toolkit
+---

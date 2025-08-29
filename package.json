@@ -5,9 +5,18 @@
   "main": "dist/audio-processor.js",
   "scripts": {
     "build": "tsc",
+    "build:watch": "tsc --watch",
     "start": "node dist/signaling-server.js",
-    "dev": "tsc --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start:hr": "node dist/hr-ai-service.js",
+    "dev": "npm run build && npm run watch:services",
+    "watch:signaling": "nodemon --watch dist --delay 2s --exec \"node dist/signaling-server.js\"",
+    "watch:hr": "nodemon --watch dist --delay 2s --exec \"node dist/hr-ai-service.js\"",
+    "watch:services": "concurrently --names \"TS,SIGNAL,HR\" --prefix-colors \"blue,yellow,magenta\" --kill-others \"npm run build:watch\" \"npm run watch:signaling\" \"npm run watch:hr\"",
+    "watch:all": "./start-watch-all.sh",
+    "clean": "rm -rf dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:hr": "node test-hr-service.js",
+    "test:logs": "node test-hr-logs.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +34,8 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.5.13",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2",
     "typescript": "^5.7.2"
   }
 }

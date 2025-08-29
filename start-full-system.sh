@@ -4,6 +4,7 @@
 pkill -f "python3 asr_server.py" 2>/dev/null
 pkill -f "node signaling-server.js" 2>/dev/null
 pkill -f "node dist/signaling-server.js" 2>/dev/null
+pkill -f "node dist/hr-ai-service.js" 2>/dev/null
 
 # Wait a moment for processes to terminate
 sleep 2
@@ -25,5 +26,10 @@ echo "Starting Node.js signaling server..."
 node dist/signaling-server.js &
 NODE_PID=$!
 
-# Wait for both processes
-wait $ASR_PID $NODE_PID
+# Start HR AI service
+echo "Starting HR AI service..."
+node dist/hr-ai-service.js &
+HR_PID=$!
+
+# Wait for all processes
+wait $ASR_PID $NODE_PID $HR_PID
