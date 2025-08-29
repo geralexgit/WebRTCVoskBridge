@@ -7,7 +7,11 @@ interface TranscriptionEntry {
   type: 'partial' | 'final' | 'info' | 'error' | 'full'
 }
 
-export function SpeechRecognition() {
+interface SpeechRecognitionProps {
+  onSessionResult?: (text: string) => void;
+}
+
+export function SpeechRecognition({ onSessionResult }: SpeechRecognitionProps = {}) {
   const [isRecording, setIsRecording] = useState(false)
   const [language, setLanguage] = useState('en')
   const [transcriptions, setTranscriptions] = useState<TranscriptionEntry[]>([])
@@ -22,6 +26,7 @@ export function SpeechRecognition() {
     setTranscriptions(prev => {
       // If it's a full session result, add as a distinct entry
       if (entry.type === 'full') {
+        if (onSessionResult) onSessionResult(entry.text)
         return [...prev, entry]
       }
       // If it's a partial transcription, replace the last partial entry

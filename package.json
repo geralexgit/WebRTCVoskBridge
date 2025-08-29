@@ -19,7 +19,8 @@
     "clean": "rm -rf dist dist-ui",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:hr": "node test-hr-service.js",
-    "test:logs": "node test-hr-logs.js"
+    "test:logs": "node test-hr-logs.js",
+    "demo": "node demo-system.js"
   },
   "keywords": [],
   "author": "",

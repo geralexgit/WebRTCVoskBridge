@@ -1,251 +1,290 @@
 
-# AI HR Bot - Real-time Speech Recognition & Interview System
+# 🤖 AI HR Assistant - WebRTC + Vosk + LLM
 
-A comprehensive AI-powered HR system that combines real-time speech recognition with intelligent interview analysis. The system processes audio from the browser, transcribes it using Vosk, and uses local LLM (Gemma 3n) to analyze candidates and generate interview questions.
+A real-time AI-powered HR interview system that combines speech recognition, natural language processing, and conversational AI to automate candidate screening and interviews.
 
-## System Architecture
+## 🚀 Features
 
-The system consists of four main components:
+### 🎤 Real-time Speech Recognition
+- **Multi-language support** (English, Russian)
+- **WebRTC-based** audio streaming for low latency
+- **Vosk ASR** for accurate speech-to-text conversion
+- **Live transcription** with partial and final results
 
-* **Web Frontend**: Captures and processes audio in the browser
-* **Node.js Bridge Server**: WebSocket server that bridges browser and ASR server
-* **Python ASR Server**: Vosk-based speech recognition engine
-* **HR AI Service**: Node.js service that analyzes resumes and generates interview questions using Ollama + Gemma 3n
+### 🧠 AI-Powered HR Assistant
+- **Conversational AI** using Gemma 3n:latest via Ollama
+- **Resume analysis** and job requirement matching
+- **Dynamic interview questions** based on candidate responses
+- **Real-time scoring** and feedback generation
+- **Session management** with conversation history
 
-### Data Flow
+### 💬 Interactive Chat Interface
+- **Real-time messaging** between candidate and AI
+- **Structured responses** with analysis, scoring, and next questions
+- **Session persistence** for ongoing conversations
+- **Responsive design** for desktop and mobile
 
-1. Browser captures audio → AudioWorklet downsamples to 16kHz PCM16
-2. Audio chunks sent via WebSocket to Node.js bridge server
-3. Node.js forwards binary data to Python Vosk server
-4. Vosk processes audio and returns transcription results
-5. Results flow back through the chain to the browser
+## 🏗️ Architecture
 
-## Features
-
-### Speech Recognition
-
-* ✅ Real-time speech recognition
-* ✅ Multi-language support (English, Russian, and more)
-* ✅ Language switching without restart
-* ✅ Audio level visualization
-* ✅ Responsive web interface
-* ✅ Low-latency processing (\~64ms chunks)
-
-### HR AI Features
-
-* ✅ Resume analysis and job matching
-* ✅ Automatic interview question generation
-* ✅ Skills gap identification
-* ✅ Local LLM processing (privacy-focused)
-* ✅ RESTful API for integration
-* ✅ Multi-language support for HR analysis
-* ✅ Comprehensive logging and monitoring
-* ✅ Request tracking with unique IDs
-* ✅ Performance metrics and health monitoring
-
-## Supported Languages
-
-Currently configured languages:
-
-* **English (US)** - Default
-* **Russian (Русский)** - Full support
-* German, French, Spanish, Chinese - Framework ready (models not included)
-
-## Prerequisites
-
-### System Requirements
-
-* Python 3.8+
-* Node.js 16+
-* Modern web browser with microphone access
-
-If **the package `python3.12-venv` is not installed**, then `venv` cannot be created. Because of this, `source venv/bin/activate` does not work — the `venv` directory simply does not exist.
-
----
-
-### 🔧 What to do:
-
-1. Install virtual environment support:
-
-```bash
-sudo apt update
-sudo apt install python3.12-venv
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │  Signaling      │    │   ASR Server    │
+│   (React/TS)    │◄──►│   Server        │◄──►│   (Python)      │
+│                 │    │   (Node.js)     │    │   (Vosk)        │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   HR AI Service │    │     Ollama      │    │   Vosk Models   │
+│   (Node.js)     │◄──►│   (Gemma 3n)    │    │   (en/ru)       │
+│                 │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-2. Now recreate the environment:
+## 📋 Prerequisites
 
+- **Node.js** 18+ and npm
+- **Python** 3.8+ with virtual environment
+- **Ollama** with Gemma 3n:latest model
+- **Vosk models** for speech recognition
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd WebRTCVoskBridge
+   ```
+
+2. **Install Node.js dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up Python virtual environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+4. **Install Ollama and Gemma model**
+   ```bash
+   # Install Ollama (https://ollama.ai)
+   curl -fsSL https://ollama.ai/install.sh | sh
+   
+   # Pull Gemma 3n model
+   ollama pull gemma3n:latest
+   ```
+
+5. **Download Vosk models**
+   ```bash
+   # English model (already included)
+   # Russian model (already included)
+   ```
+
+## 🚀 Quick Start
+
+### Option 1: Full System (Recommended)
 ```bash
-python3 -m venv venv
+npm run watch:full
 ```
+This starts all services:
+- Frontend UI (Vite dev server)
+- Signaling server (WebRTC)
+- HR AI service (Node.js)
+- ASR server (Python + Vosk)
 
-3. Activate it:
-
+### Option 2: Individual Services
 ```bash
-source venv/bin/activate
-```
+# Terminal 1: Frontend
+npm run dev:ui
 
-4. Install required packages (the PEP 668 error will disappear now):
+# Terminal 2: Backend services
+npm run watch
 
-```bash
-pip install --upgrade pip
-pip install vosk websockets numpy
-```
-
----
-
-### Python Dependencies
-
-```bash
-    # create a folder for the environment
-    python3 -m venv venv
-
-    # activate the environment
-    source venv/bin/activate
-
-    # now install packages
-    pip install vosk websockets numpy
-```
-
-### Node.js Dependencies
-
-```bash
-npm install express cors body-parser ws
-```
-
-## Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd speech-recognition-system
-```
-
-### 2. Install Dependencies
-
-**Python dependencies:**
-
-```bash
-pip install vosk websockets numpy
-```
-
-**Node.js dependencies:**
-
-```bash
-npm install
-```
-
-### 3. Download Language Models
-
-**English Model (Required):**
-
-```bash
-wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-unzip vosk-model-small-en-us-0.15.zip
-mv vosk-model-small-en-us-0.15 vosk-model
-```
-
-**Russian Model (Optional):**
-
-```bash
-wget https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip
-unzip vosk-model-small-ru-0.22.zip
-mv vosk-model-small-ru-0.22 vosk-model-ru
-```
-
-### 4. Setup Ollama and Gemma 3n (For HR AI Service)
-
-**Install Ollama:**
-
-```bash
-# Linux/macOS
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Or download from https://ollama.ai/download
-```
-
-**Pull Gemma 3n model:**
-
-```bash
-ollama pull gemma3n:latest
-```
-
-**Verify Ollama is running:**
-
-```bash
-# Check if Ollama service is running
-ollama list
-
-# Test the model
-ollama run gemma3n:latest "Hello, how are you?"
-```
-
-**Start Ollama service (if not auto-started):**
-
-```bash
-ollama serve
-```
-
-### 5. Additional Language Models
-
-To add more languages, download models from [Vosk Models](https://alphacephei.com/vosk/models) and place them in directories matching the language codes in `asr_server.py`:
-
-* German: `vosk-model-de`
-* French: `vosk-model-fr`
-* Spanish: `vosk-model-es`
-* Chinese: `vosk-model-zh`
-
-## Running the System
-
-### Production Mode
-
-**Start all services:**
-```bash
-chmod +x start-full-system.sh
-./start-full-system.sh
-```
-
-**Start individual services:**
-```bash
-# HR AI service only
-chmod +x start-hr-service.sh
-./start-hr-service.sh
-
-# ASR server only
+# Terminal 3: ASR server
 python3 asr_server.py
-
-# Signaling server only
-npm run build && npm start
 ```
 
-### Development Mode (Recommended for Development)
-
-**Start all services with auto-restart and live reloading:**
+### Option 3: Production Build
 ```bash
-chmod +x start-watch-all.sh
-./start-watch-all.sh
+npm run build
+npm start
 ```
 
-**Or use npm scripts for more control:**
+## 🎯 Usage
+
+1. **Open the application** in your browser (usually `http://localhost:5173`)
+
+2. **Start speech recognition**:
+   - Click the "Start" button
+   - Allow microphone access
+   - Speak clearly into your microphone
+
+3. **View real-time transcription**:
+   - Watch live transcription appear in the speech recognition panel
+   - See partial and final results
+
+4. **Interact with HR AI**:
+   - Your transcribed speech is automatically sent to the AI
+   - Receive analysis, scoring, and follow-up questions
+   - Continue the conversation naturally
+
+5. **Monitor the chat**:
+   - View the conversation history in the chat interface
+   - See AI responses with structured feedback
+   - Track your session progress
+
+## 🔧 Configuration
+
+### Environment Variables
+Create a `.env` file in the root directory:
+```env
+# Server ports
+SIGNALING_PORT=8080
+HR_SERVICE_PORT=3001
+ASR_PORT=2700
+
+# Ollama configuration
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=gemma3n:latest
+
+# Vosk model paths
+VOSK_MODEL_EN=./vosk-model
+VOSK_MODEL_RU=./vosk-model-ru
+```
+
+### Job Description
+Update the job description in `ui/src/app.tsx`:
+```typescript
+const jobDescription = 'Your job description here';
+```
+
+## 📊 API Endpoints
+
+### HR AI Service (`http://localhost:3001`)
+
+#### `POST /process-resume`
+Analyze resume against job requirements.
+```json
+{
+  "jobDescription": "Python developer with SQL experience",
+  "resume": "Candidate resume text..."
+}
+```
+
+#### `POST /chat`
+Process conversational messages.
+```json
+{
+  "message": "I have 3 years of Python experience",
+  "sessionId": "unique-session-id",
+  "jobDescription": "Job requirements..."
+}
+```
+
+#### `GET /conversation/:sessionId`
+Retrieve conversation history.
+
+#### `DELETE /conversation/:sessionId`
+Clear conversation history.
+
+#### `GET /health`
+Service health check.
+
+### Signaling Server (`http://localhost:8080`)
+- WebRTC signaling for audio streaming
+- WebSocket connections for real-time communication
+
+## 🧪 Testing
+
+### Test HR AI Service
 ```bash
-# Watch all services (TypeScript + ASR + Signaling + HR AI)
-npm run watch:all
-
-# Watch only Node.js services (requires manual ASR server start)
-npm run watch:services
-
-# Watch individual services
-npm run watch:signaling  # Signaling server only
-npm run watch:hr         # HR AI service only
-npm run dev              # TypeScript compiler only
+npm run test:hr
 ```
 
-**Development Mode Features:**
-* ✅ Auto-restart on file changes
-* ✅ TypeScript compilation in watch mode
-* ✅ Color-coded logs for each service
-* ✅ Graceful shutdown with Ctrl+C
-* ✅ Real-time error reporting
-* ✅ Automatic rebuilding on source changes
+### Test with Sample Data
+```bash
+node test-hr-service.js
+```
 
----
+## 📁 Project Structure
+
+```
+WebRTCVoskBridge/
+├── src/                    # TypeScript source
+│   ├── signaling-server.ts # WebRTC signaling
+│   ├── hr-ai-service.ts    # HR AI service
+│   └── audio-processor.ts  # Audio processing
+├── ui/                     # Frontend application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── app.tsx         # Main app
+│   │   └── main.tsx        # Entry point
+│   └── dist/               # Built frontend
+├── asr_server.py           # Python ASR server
+├── vosk-model/             # English Vosk model
+├── vosk-model-ru/          # Russian Vosk model
+└── dist/                   # Built backend
+```
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+1. **Ollama not responding**
+   ```bash
+   # Check if Ollama is running
+   ollama serve
+   
+   # Verify model is available
+   ollama list
+   ```
+
+2. **Vosk model not found**
+   ```bash
+   # Check model paths in asr_server.py
+   # Ensure vosk-model directories exist
+   ```
+
+3. **WebRTC connection issues**
+   - Check browser console for errors
+   - Verify signaling server is running
+   - Ensure microphone permissions are granted
+
+4. **HR AI service errors**
+   ```bash
+   # Check service logs
+   npm run test:hr
+   
+   # Verify Ollama connection
+   curl http://localhost:11434/api/version
+   ```
+
+### Debug Mode
+Enable detailed logging by setting environment variables:
+```bash
+export DEBUG=webrtc:*,hr:*,asr:*
+npm run watch:full
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the ISC License.
+
+## 🙏 Acknowledgments
+
+- **Vosk** for speech recognition
+- **Ollama** for local LLM inference
+- **WebRTC** for real-time communication
+- **React/Preact** for the frontend framework

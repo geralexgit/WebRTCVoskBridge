@@ -15,6 +15,9 @@ declare global {
 const app = express();
 const PORT = 3001; // Using different port to avoid conflicts
 
+// In-memory conversation storage (in production, use a database)
+const conversations = new Map<string, Array<{ role: 'user' | 'ai'; content: string; timestamp: Date }>>();
+
 // Logging utility
 const log = {
   info: (message: string, data?: any) => {
@@ -196,6 +199,172 @@ ${resume}
   }
 });
 
+// POST /chat - New endpoint for conversational messages
+app.post("/chat", async (req, res) => {
+  const requestId = req.requestId;
+  const startTime = Date.now();
+  
+  log.info(`Processing chat message`, {
+    requestId,
+    hasMessage: !!req.body.message,
+    hasSessionId: !!req.body.sessionId,
+    messageLength: req.body.message?.length || 0
+  });
+
+  const { message, sessionId = 'default', jobDescription, conversationHistory } = req.body;
+
+  if (!message) {
+    log.warn(`Missing message in chat request`, { requestId });
+    return res.status(400).json({ error: "Message is required" });
+  }
+
+  // Get or create conversation history
+  let history = conversations.get(sessionId) || [];
+  
+  // Add user message to history
+  history.push({ role: 'user', content: message, timestamp: new Date() });
+  
+  // Prepare conversation context for the AI
+  const conversationContext = history
+    .slice(-10) // Keep last 10 messages for context
+    .map(msg => `${msg.role === 'user' ? 'Candidate' : 'HR Assistant'}: ${msg.content}`)
+    .join('\n');
+
+  const prompt = `
+Ты — HR-ассистент, проводящий интервью с кандидатом.
+
+${jobDescription ? `Описание вакансии: ${jobDescription}` : ''}
+
+Контекст разговора:
+${conversationContext}
+
+Твоя задача:
+1. Проанализируй ответ кандидата
+2. Оцени соответствие требованиям вакансии
+3. Задай следующий уместный вопрос или дай обратную связь
+4. Будь дружелюбным, но профессиональным
+
+Верни ответ в JSON формате:
+{
+  "analysis": "краткий анализ ответа",
+  "score": "оценка от 1 до 10",
+  "feedback": "конструктивная обратная связь",
+  "next_question": "следующий вопрос для кандидата",
+  "overall_assessment": "общая оценка соответствия вакансии"
+}
+
+Ответ кандидата: ${message}
+`;
+
+  try {
+    log.info(`Sending chat request to Ollama API`, {
+      requestId,
+      ollamaUrl: "http://localhost:11434/api/generate",
+      model: "gemma3n:latest",
+      conversationLength: history.length
+    });
+
+    const ollamaStartTime = Date.now();
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gemma3n:latest",
+        prompt: prompt,
+        stream: false
+      })
+    });
+
+    const ollamaResponseTime = Date.now() - ollamaStartTime;
+    
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json() as { response: string };
+    const rawOutput = data.response;
+    
+    let aiResponse;
+    try {
+      aiResponse = JSON.parse(rawOutput);
+    } catch (e) {
+      // If JSON parsing fails, use raw response
+      aiResponse = { 
+        analysis: "Анализирую ответ...",
+        feedback: rawOutput,
+        next_question: "Расскажите подробнее о вашем опыте."
+      };
+    }
+
+    // Add AI response to history
+    history.push({ role: 'ai', content: JSON.stringify(aiResponse), timestamp: new Date() });
+    conversations.set(sessionId, history);
+
+    const totalTime = Date.now() - startTime;
+    log.info(`Chat message processed successfully`, {
+      requestId,
+      totalProcessingTime: totalTime,
+      ollamaResponseTime,
+      sessionId,
+      conversationLength: history.length
+    });
+
+    res.json(aiResponse);
+  } catch (error) {
+    const totalTime = Date.now() - startTime;
+    log.error(`Error processing chat message`, {
+      requestId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      totalProcessingTime: totalTime
+    });
+    
+    res.status(500).json({ 
+      error: "Ошибка при обработке сообщения",
+      requestId: requestId
+    });
+  }
+});
+
+// GET /conversation/:sessionId - Get conversation history
+app.get("/conversation/:sessionId", (req, res) => {
+  const { sessionId } = req.params;
+  const requestId = req.requestId;
+  
+  const history = conversations.get(sessionId) || [];
+  
+  log.info(`Retrieved conversation history`, {
+    requestId,
+    sessionId,
+    messageCount: history.length
+  });
+  
+  res.json({ 
+    sessionId, 
+    messages: history,
+    messageCount: history.length
+  });
+});
+
+// DELETE /conversation/:sessionId - Clear conversation history
+app.delete("/conversation/:sessionId", (req, res) => {
+  const { sessionId } = req.params;
+  const requestId = req.requestId;
+  
+  const deleted = conversations.delete(sessionId);
+  
+  log.info(`Cleared conversation history`, {
+    requestId,
+    sessionId,
+    wasDeleted: deleted
+  });
+  
+  res.json({ 
+    sessionId, 
+    cleared: deleted,
+    message: deleted ? "Conversation cleared" : "Conversation not found"
+  });
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   const requestId = req.requestId;
@@ -204,7 +373,8 @@ app.get("/health", (req, res) => {
     requestId,
     uptime: process.uptime(),
     memoryUsage: process.memoryUsage(),
-    nodeVersion: process.version
+    nodeVersion: process.version,
+    activeConversations: conversations.size
   });
   
   res.json({ 
@@ -213,7 +383,8 @@ app.get("/health", (req, res) => {
     port: PORT,
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    requestId
+    requestId,
+    activeConversations: conversations.size
   });
 });
 
@@ -259,6 +430,9 @@ app.listen(PORT, () => {
     url: `http://localhost:${PORT}`,
     endpoints: [
       'POST /process-resume',
+      'POST /chat',
+      'GET /conversation/:sessionId',
+      'DELETE /conversation/:sessionId',
       'GET /health'
     ]
   });
