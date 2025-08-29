@@ -203,6 +203,7 @@ body {
   font-style: italic;
   text-align: center;
   padding: 2rem;
+  flex-direction: column;
 }
 
 .message {
