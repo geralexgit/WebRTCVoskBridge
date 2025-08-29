@@ -121,6 +121,16 @@ class ASRServer:
                                     "message": f"Language {language} not available",
                                     "available": list(self.models.keys())
                                 }))
+                        elif data.get("cmd") == "get_final_results":
+                            # Return all accumulated final results for this session
+                            full_text = " ".join([r for r in final_results if r]).strip()
+                            await websocket.send(json.dumps({
+                                "cmd": "final_results",
+                                "results": final_results,
+                                "full_text": full_text,
+                                "result_count": len(final_results)
+                            }))
+                            print(f"Sent final results to {websocket.remote_address}: {full_text}")
                     except Exception as e:
                         # игнорируем не-JSON текст
                         print(f"Error parsing command: {e}")

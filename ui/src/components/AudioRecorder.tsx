@@ -16,9 +16,58 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
   const volumeDataRef = useRef<Uint8Array | null>(null)
   const finalizePendingRef = useRef(false)
   const finalizeTimeoutRef = useRef<number | null>(null)
+  const pauseTimeoutRef = useRef<number | null>(null)
+  const lastSpeechTimeRef = useRef<number>(Date.now())
+  const hasRequestedResultsRef = useRef(false)
   
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
   const [volumeLevel, setVolumeLevel] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [pauseCountdown, setPauseCountdown] = useState(0)
+  const [lastVolumeLevel, setLastVolumeLevel] = useState(0)
+  const [debugCounter, setDebugCounter] = useState(0)
+
+  const requestFinalResults = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('Requesting final results due to 5-second pause')
+      wsRef.current.send(JSON.stringify({ cmd: 'get_final_results' }))
+    }
+  }
+
+  const checkPauseStatus = () => {
+    if (!isRecording) return
+
+    setDebugCounter(prev => prev + 1)
+    const timeSinceLastSpeech = Date.now() - lastSpeechTimeRef.current
+    const currentVolume = volumeLevel
+
+    // Debug logging every 2 seconds
+    if (timeSinceLastSpeech % 2000 < 100) {
+      console.log(`Debug: Volume=${currentVolume.toFixed(1)}%, Time since speech=${timeSinceLastSpeech}ms, Paused=${isPaused}`)
+    }
+
+    // Check if there's speech activity
+    if (currentVolume > 5) { // Lowered threshold from 10 to 5
+      lastSpeechTimeRef.current = Date.now()
+      hasRequestedResultsRef.current = false
+      setIsPaused(false)
+      setPauseCountdown(0)
+    } else {
+      // Check for pause
+      if (timeSinceLastSpeech > 3000) { // Show pause indicator after 3 seconds
+        setIsPaused(true)
+        const remainingTime = Math.max(0, Math.ceil((5000 - timeSinceLastSpeech) / 1000))
+        setPauseCountdown(remainingTime)
+        console.log(`Pause detected! Countdown: ${remainingTime}s, Volume: ${currentVolume.toFixed(1)}%`)
+      }
+      if (timeSinceLastSpeech > 5000 && !hasRequestedResultsRef.current) {
+        // 5 second pause detected - request final results
+        hasRequestedResultsRef.current = true
+        console.log('Requesting final results due to 5-second pause')
+        requestFinalResults()
+      }
+    }
+  }
 
   const updateVolumeIndicator = () => {
     if (!analyserRef.current || !volumeDataRef.current) return
@@ -80,6 +129,13 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
                 finalizeTimeoutRef.current = null
               }
               cleanup()
+            }
+          } else if (data.cmd === 'final_results') {
+            // Handle response from get_final_results command
+            console.log('Received final results:', data)
+            if (data.full_text && data.full_text.trim()) {
+              // Send the full text to chat via onTranscription with 'full' flag
+              onTranscription(data.full_text, 'full')
             }
           }
         } catch (e) {
@@ -146,8 +202,26 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
   const startRecording = async () => {
     try {
       onRecordingChange(true)
+      // Reset pause detection state
+      lastSpeechTimeRef.current = Date.now()
+      hasRequestedResultsRef.current = false
+      setIsPaused(false)
+      setPauseCountdown(0)
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current)
+        pauseTimeoutRef.current = null
+      }
       await createConnection()
       await setupAudio()
+      
+      // Start pause detection timer
+      const pauseDetectionTimer = () => {
+        checkPauseStatus()
+        if (isRecording) {
+          pauseTimeoutRef.current = window.setTimeout(pauseDetectionTimer, 100)
+        }
+      }
+      pauseDetectionTimer()
     } catch (error) {
       console.error('Failed to start recording:', error)
       stopRecording()
@@ -184,6 +258,13 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
       clearTimeout(finalizeTimeoutRef.current)
       finalizeTimeoutRef.current = null
     }
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current)
+      pauseTimeoutRef.current = null
+    }
+    // Reset pause states
+    setIsPaused(false)
+    setPauseCountdown(0)
     try {
       if (workletNodeRef.current) {
         workletNodeRef.current.disconnect()
@@ -217,6 +298,14 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
       wsRef.current.send(languageMessage)
     }
   }, [language])
+
+  // Monitor volume level changes for debugging
+  useEffect(() => {
+    if (Math.abs(volumeLevel - lastVolumeLevel) > 5) {
+      console.log(`Volume changed: ${lastVolumeLevel.toFixed(1)}% -> ${volumeLevel.toFixed(1)}%`)
+      setLastVolumeLevel(volumeLevel)
+    }
+  }, [volumeLevel, lastVolumeLevel])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -254,10 +343,25 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
       </div>
       
       <div class="volume-indicator">
-        <span>Audio Level:</span>
-        <div class="volume-bar">
-          <div class="volume-fill" style={{ width: `${volumeLevel}%` }}></div>
+        <div class="volume-controls">
+          <span>Audio Level: {volumeLevel.toFixed(1)}%</span>
+          <div class="volume-bar">
+            <div class="volume-fill" style={{ width: `${volumeLevel}%` }}></div>
+          </div>
         </div>
+        {isPaused && isRecording && (
+          <div class="pause-indicator">
+            ⏸️ Pause detected - Will auto-send results in {pauseCountdown}s
+          </div>
+        )}
+        {isRecording && (
+          <div class="debug-info" style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+            Time since speech: {Math.floor((Date.now() - lastSpeechTimeRef.current) / 1000)}s | 
+            Paused: {isPaused ? 'Yes' : 'No'} | 
+            Requested: {hasRequestedResultsRef.current ? 'Yes' : 'No'} |
+            Timer calls: {debugCounter}
+          </div>
+        )}
       </div>
 
       <button 
