@@ -270,6 +270,13 @@ export DEBUG=webrtc:*,hr:*,asr:*
 npm run watch:full
 ```
 
+### Manual run
+```
+./start-servers.sh
+./start-hr-service.sh
+npm run watch:ui
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository
