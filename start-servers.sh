@@ -127,18 +127,18 @@ sleep 2
 echo "🟢 Starting Node.js signaling server..."
 node signaling-server.js &
 NODE_PID=$!
-echo "   Signaling server started (PID: $NODE_PID) on http://0.0.0.0:5000"
+echo "   Signaling server started (PID: $NODE_PID) on http://0.0.0.0:5001"
 
 echo ""
 echo "🌐 Servers Ready!"
 echo "================"
-echo "🔗 Open your browser and go to: http://localhost:5000"
+echo "🔗 Open your browser and go to: http://localhost:5001"
 echo "🎤 Click 'Start Recording' and grant microphone permissions"
 echo "🗣️  Speak clearly and watch the real-time transcription"
 echo ""
 echo "📊 Server Status:"
 echo "   ASR Server:       http://localhost:2700 (WebSocket)"
-echo "   Signaling Server: http://localhost:5000 (HTTP/WebRTC)"
+echo "   Signaling Server: http://localhost:5001 (HTTP/WebRTC)"
 echo ""
 echo "⏹️  Press Ctrl+C to stop all servers"
 

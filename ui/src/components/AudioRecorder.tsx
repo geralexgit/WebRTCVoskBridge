@@ -35,8 +35,8 @@ export function AudioRecorder({ isRecording, onRecordingChange, onTranscription,
     try {
       setStatus('connecting')
 
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
-      const wsUrl = `${protocol}//${window.location.host}/websocket`
+      // const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+      const wsUrl = `ws://127.0.0.1:2700/websocket`
 
       wsRef.current = new WebSocket(wsUrl)
       wsRef.current.binaryType = 'arraybuffer'
