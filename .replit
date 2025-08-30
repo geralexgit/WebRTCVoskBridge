@@ -26,7 +26,7 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "./start-full-system.sh"
-waitForPort = 5000
+waitForPort = 5001
 
 [workflows.workflow.metadata]
 outputType = "webview"
@@ -36,5 +36,5 @@ localPort = 2700
 externalPort = 80
 
 [[ports]]
-localPort = 5000
-externalPort = 5000
+localPort = 5001
+externalPort = 5001

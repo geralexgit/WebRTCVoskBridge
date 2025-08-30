@@ -1,0 +1,376 @@
+import { useEffect, useRef, useState } from 'preact/hooks'
+
+interface AudioRecorderProps {
+  isRecording: boolean
+  onRecordingChange: (recording: boolean) => void
+  onTranscription: (text: string, isFinal: boolean | 'full') => void
+  language: string
+}
+
+export function AudioRecorder({ isRecording, onRecordingChange, onTranscription, language }: AudioRecorderProps) {
+  const wsRef = useRef<WebSocket | null>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const volumeDataRef = useRef<Uint8Array | null>(null)
+  const finalizePendingRef = useRef(false)
+  const finalizeTimeoutRef = useRef<number | null>(null)
+  const pauseTimeoutRef = useRef<number | null>(null)
+  const lastSpeechTimeRef = useRef<number>(Date.now())
+  const hasRequestedResultsRef = useRef(false)
+  
+  const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
+  const [volumeLevel, setVolumeLevel] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [pauseCountdown, setPauseCountdown] = useState(0)
+  const [lastVolumeLevel, setLastVolumeLevel] = useState(0)
+  const [debugCounter, setDebugCounter] = useState(0)
+
+  const requestFinalResults = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('Requesting final results due to 5-second pause')
+      wsRef.current.send(JSON.stringify({ cmd: 'get_final_results' }))
+    }
+  }
+
+  const checkPauseStatus = () => {
+    if (!isRecording) return
+
+    setDebugCounter(prev => prev + 1)
+    const timeSinceLastSpeech = Date.now() - lastSpeechTimeRef.current
+    const currentVolume = volumeLevel
+
+    // Debug logging every 2 seconds
+    if (timeSinceLastSpeech % 2000 < 100) {
+      console.log(`Debug: Volume=${currentVolume.toFixed(1)}%, Time since speech=${timeSinceLastSpeech}ms, Paused=${isPaused}`)
+    }
+
+    // Check if there's speech activity
+    if (currentVolume > 5) { // Lowered threshold from 10 to 5
+      lastSpeechTimeRef.current = Date.now()
+      hasRequestedResultsRef.current = false
+      setIsPaused(false)
+      setPauseCountdown(0)
+    } else {
+      // Check for pause
+      if (timeSinceLastSpeech > 3000) { // Show pause indicator after 3 seconds
+        setIsPaused(true)
+        const remainingTime = Math.max(0, Math.ceil((5000 - timeSinceLastSpeech) / 1000))
+        setPauseCountdown(remainingTime)
+        console.log(`Pause detected! Countdown: ${remainingTime}s, Volume: ${currentVolume.toFixed(1)}%`)
+      }
+      if (timeSinceLastSpeech > 5000 && !hasRequestedResultsRef.current) {
+        // 5 second pause detected - request final results
+        hasRequestedResultsRef.current = true
+        console.log('Requesting final results due to 5-second pause')
+        requestFinalResults()
+      }
+    }
+  }
+
+  const updateVolumeIndicator = () => {
+    if (!analyserRef.current || !volumeDataRef.current) return
+
+    analyserRef.current.getByteFrequencyData(volumeDataRef.current)
+    const average = volumeDataRef.current.reduce((a, b) => a + b) / volumeDataRef.current.length
+    const percentage = (average / 255) * 100
+    setVolumeLevel(percentage)
+
+    if (isRecording) {
+      requestAnimationFrame(updateVolumeIndicator)
+    }
+  }
+
+  const createConnection = async () => {
+    try {
+      setStatus('connecting')
+
+      // const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+      const wsUrl = `ws://127.0.0.1:2700/websocket`
+
+      wsRef.current = new WebSocket(wsUrl)
+      wsRef.current.binaryType = 'arraybuffer'
+
+      wsRef.current.onopen = () => {
+        setStatus('connected')
+        // Send language selection to server
+        const languageMessage = JSON.stringify({ cmd: 'set_language', language })
+        wsRef.current?.send(languageMessage)
+      }
+
+      wsRef.current.onclose = () => {
+        setStatus('disconnected')
+      }
+
+      wsRef.current.onerror = () => {
+        setStatus('error')
+      }
+
+      wsRef.current.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data)
+          if (data.status === 'language_changed') {
+            console.log(`Language switched to: ${data.language}`)
+          } else if (data.status === 'language_error') {
+            console.error(`Language error: ${data.message}`)
+          } else if (data.partial && data.partial.trim()) {
+            onTranscription(data.partial, false)
+          } else if (data.text && data.text.trim()) {
+            onTranscription(data.text, true)
+          } else if (data.full_result && data.full_result.trim()) {
+            // Forward full session result with a special flag
+            onTranscription(data.full_result, 'full')
+            // If finalize was pending, cleanup now
+            if (finalizePendingRef.current) {
+              finalizePendingRef.current = false
+              if (finalizeTimeoutRef.current) {
+                clearTimeout(finalizeTimeoutRef.current)
+                finalizeTimeoutRef.current = null
+              }
+              cleanup()
+            }
+          } else if (data.cmd === 'final_results') {
+            // Handle response from get_final_results command
+            console.log('Received final results:', data)
+            if (data.full_text && data.full_text.trim()) {
+              // Send the full text to chat via onTranscription with 'full' flag
+              onTranscription(data.full_text, 'full')
+            }
+          }
+        } catch (e) {
+          // Raw message
+          onTranscription(ev.data as string, true)
+        }
+      }
+
+      // Wait for connection to open
+      await new Promise((resolve, reject) => {
+        wsRef.current?.addEventListener('open', resolve, { once: true })
+        wsRef.current?.addEventListener('error', reject, { once: true })
+        setTimeout(() => reject(new Error('Connection timeout')), 10000)
+      })
+    } catch (error) {
+      setStatus('error')
+      throw error
+    }
+  }
+
+  const setupAudio = async () => {
+    try {
+      mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 48000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
+        video: false
+      })
+
+      audioContextRef.current = new AudioContext({ sampleRate: 48000 })
+
+      await audioContextRef.current.audioWorklet.addModule('/audio-processor.js')
+
+      const source = audioContextRef.current.createMediaStreamSource(mediaStreamRef.current)
+
+      // Analyzer for volume indicator
+      analyserRef.current = audioContextRef.current.createAnalyser()
+      analyserRef.current.fftSize = 256
+      volumeDataRef.current = new Uint8Array(analyserRef.current.frequencyBinCount)
+      source.connect(analyserRef.current)
+
+      workletNodeRef.current = new AudioWorkletNode(audioContextRef.current, 'pcm16-downsampler', {
+        processorOptions: { targetSampleRate: 16000 }
+      })
+
+      workletNodeRef.current.port.onmessage = (ev) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(ev.data)
+        }
+      }
+
+      source.connect(workletNodeRef.current)
+      updateVolumeIndicator()
+    } catch (error) {
+      setStatus('error')
+      throw error
+    }
+  }
+
+  const startRecording = async () => {
+    try {
+      onRecordingChange(true)
+      // Reset pause detection state
+      lastSpeechTimeRef.current = Date.now()
+      hasRequestedResultsRef.current = false
+      setIsPaused(false)
+      setPauseCountdown(0)
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current)
+        pauseTimeoutRef.current = null
+      }
+      await createConnection()
+      await setupAudio()
+      
+      // Start pause detection timer
+      const pauseDetectionTimer = () => {
+        checkPauseStatus()
+        if (isRecording) {
+          pauseTimeoutRef.current = window.setTimeout(pauseDetectionTimer, 100)
+        }
+      }
+      pauseDetectionTimer()
+    } catch (error) {
+      console.error('Failed to start recording:', error)
+      stopRecording()
+    }
+  }
+
+  const stopRecording = () => {
+    onRecordingChange(false)
+
+    // Send finalize command
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      try {
+        wsRef.current.send(JSON.stringify({ cmd: 'finalize' }))
+        finalizePendingRef.current = true
+        // Set a timeout to force cleanup if full_result is not received
+        finalizeTimeoutRef.current = window.setTimeout(() => {
+          if (finalizePendingRef.current) {
+            finalizePendingRef.current = false
+            cleanup()
+          }
+        }, 2000)
+        return // Defer cleanup until full_result is received or timeout
+      } catch (e) {
+        console.error('Error sending finalize command:', e)
+      }
+    }
+    // If not connected, cleanup immediately
+    cleanup()
+  }
+
+  // Extracted cleanup logic
+  const cleanup = () => {
+    if (finalizeTimeoutRef.current) {
+      clearTimeout(finalizeTimeoutRef.current)
+      finalizeTimeoutRef.current = null
+    }
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current)
+      pauseTimeoutRef.current = null
+    }
+    // Reset pause states
+    setIsPaused(false)
+    setPauseCountdown(0)
+    try {
+      if (workletNodeRef.current) {
+        workletNodeRef.current.disconnect()
+        workletNodeRef.current = null
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop())
+        mediaStreamRef.current = null
+      }
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      analyserRef.current = null
+      volumeDataRef.current = null
+      setVolumeLevel(0)
+    } catch (error) {
+      console.error('Error during cleanup:', error)
+    }
+    setStatus('disconnected')
+  }
+
+  // Update language when it changes
+  useEffect(() => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const languageMessage = JSON.stringify({ cmd: 'set_language', language })
+      wsRef.current.send(languageMessage)
+    }
+  }, [language])
+
+  // Monitor volume level changes for debugging
+  useEffect(() => {
+    if (Math.abs(volumeLevel - lastVolumeLevel) > 5) {
+      console.log(`Volume changed: ${lastVolumeLevel.toFixed(1)}% -> ${volumeLevel.toFixed(1)}%`)
+      setLastVolumeLevel(volumeLevel)
+    }
+  }, [volumeLevel, lastVolumeLevel])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (isRecording) {
+        stopRecording()
+      } else {
+        cleanup()
+      }
+    }
+  }, [])
+
+  const getStatusText = () => {
+    switch (status) {
+      case 'connecting': return 'Connecting to server...'
+      case 'connected': return '✅ Connected - Ready to transcribe'
+      case 'error': return '❌ Connection error'
+      default: return 'Ready to start'
+    }
+  }
+
+  const getStatusClass = () => {
+    switch (status) {
+      case 'connecting': return 'status-connecting'
+      case 'connected': return 'status-connected'
+      case 'error': return 'status-error'
+      default: return 'status-disconnected'
+    }
+  }
+
+  return (
+    <div class="audio-recorder">
+      <div class={`status ${getStatusClass()}`}>
+        {getStatusText()}
+      </div>
+      
+      <div class="volume-indicator">
+        <div class="volume-controls">
+          <span>Audio Level: {volumeLevel.toFixed(1)}%</span>
+          <div class="volume-bar">
+            <div class="volume-fill" style={{ width: `${volumeLevel}%` }}></div>
+          </div>
+        </div>
+        {isPaused && isRecording && (
+          <div class="pause-indicator">
+            ⏸️ Pause detected - Will auto-send results in {pauseCountdown}s
+          </div>
+        )}
+        {isRecording && (
+          <div class="debug-info" style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+            Time since speech: {Math.floor((Date.now() - lastSpeechTimeRef.current) / 1000)}s | 
+            Paused: {isPaused ? 'Yes' : 'No'} | 
+            Requested: {hasRequestedResultsRef.current ? 'Yes' : 'No'} |
+            Timer calls: {debugCounter}
+          </div>
+        )}
+      </div>
+
+      <button 
+        class={`record-button ${isRecording ? 'recording' : ''}`}
+        onClick={isRecording ? stopRecording : startRecording}
+        disabled={status === 'connecting'}
+      >
+        {isRecording ? '⏹️ Stop Recording' : '🎤 Start Recording'}
+      </button>
+    </div>
+  )
+}

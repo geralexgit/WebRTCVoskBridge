@@ -108,7 +108,7 @@ wss.on('connection', (browserWS) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Signaling/bridge server running on http://0.0.0.0:${PORT}`);
   console.log(`Make sure VOSK ASR server is running on ${VOSK_URL}`);
