@@ -760,4 +760,167 @@ body {
 .chat-submit-button:disabled {
   background: #9ca3af;
   cursor: not-allowed;
+}/* Cha
+t Analysis Styles */
+.chat-analysis {
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  padding: 1rem 1.5rem;
+  margin: 0;
+}
+
+.chat-analysis h3 {
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-analysis h3::before {
+  content: "📊";
+  font-size: 1.1rem;
+}
+
+.analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.analysis-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.analysis-item label {
+  font-weight: 600;
+  color: #4b5563;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.analysis-item span {
+  flex: 1;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.analysis-item .score {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.analysis-item .assessment {
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* Responsive adjustments for analysis */
+@media (max-width: 768px) {
+  .analysis-item {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .analysis-item label {
+    min-width: auto;
+  }
+}/* Anal
+ysis Tab Styles */
+.analysis-container {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.conversation-summary {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.conversation-summary h4 {
+  color: #374151;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.conversation-summary h4::before {
+  content: "💬";
+  font-size: 1.2rem;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #2563eb;
+}
+
+.stat-item label {
+  font-weight: 500;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.stat-item span {
+  font-weight: 600;
+  color: #1f2937;
+  background: #e5e7eb;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+/* Analysis tab specific chat-analysis overrides */
+.analysis-container .chat-analysis {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive adjustments for analysis tab */
+@media (max-width: 768px) {
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .analysis-container {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
 }

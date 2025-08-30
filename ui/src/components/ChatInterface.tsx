@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
+import { ChatAnalysis } from './ChatAnalysis'
 
 interface Message {
   text: string
@@ -83,6 +84,8 @@ export function ChatInterface({ messages, onSendMessage }: ChatInterfaceProps) {
           </>
         )}
       </div>
+
+      {/* <ChatAnalysis messages={messages} /> */}
 
       {onSendMessage && (
         <form class="chat-input-form" onSubmit={handleSubmit}>
