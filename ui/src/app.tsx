@@ -166,7 +166,10 @@ export function App() {
                 </div>
               )}
               
-              <ChatInterface messages={messages} />
+              <ChatInterface 
+                messages={messages} 
+                onSendMessage={handleSessionResult}
+              />
             </div>
           </div>
         )}
