@@ -79,11 +79,22 @@ A real-time AI-powered HR interview system that combines speech recognition, nat
    ```
 
 5. **Download Vosk models**
-   ```bash
-   # English model (already included)
-   # Russian model (already included)
-   ```
 
+**English Model (Required):**
+
+```bash
+wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+unzip vosk-model-small-en-us-0.15.zip
+mv vosk-model-small-en-us-0.15 vosk-model
+```
+
+**Russian Model (Optional):**
+
+```bash
+wget https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip
+unzip vosk-model-small-ru-0.22.zip
+mv vosk-model-small-ru-0.22 vosk-model-ru
+```
 ## 🚀 Quick Start
 
 ### Option 1: Full System (Recommended)
